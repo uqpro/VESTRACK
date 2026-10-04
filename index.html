@@ -2,130 +2,191 @@
 <html lang="id">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>AIS Indonesia</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>AIS Indonesia - Vessel Tracker</title>
+
+  <!-- PWA Metadata & Manifest -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0b131e">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
   <!-- MapLibre GL JS -->
   <link href="https://unpkg.com/maplibre-gl@5.7.0/dist/maplibre-gl.css" rel="stylesheet">
   <script src="https://unpkg.com/maplibre-gl@5.7.0/dist/maplibre-gl.js"></script>
 
   <style>
-    * { box-sizing: border-box; }
-    html, body, #map { margin: 0; width: 100%; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; }
-    
-    .topbar {
-      position: absolute; z-index: 10; top: 12px; left: 12px; right: 12px;
-      display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
-      background: rgba(8, 17, 29, 0.92); backdrop-filter: blur(8px); color: #fff; padding: 10px 14px;
-      border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+    :root {
+      --bg-dark: rgba(11, 19, 30, 0.88);
+      --bg-card: #ffffff;
+      --primary: #0284c7;
+      --primary-hover: #0369a1;
+      --accent: #10b981;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --border-color: #e2e8f0;
+      --radius: 16px;
+      --shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.3);
     }
-    .brand { font-weight: 700; font-size: 17px; margin-right: 8px; letter-spacing: 0.5px; }
-    input, select, button { border: 0; border-radius: 8px; padding: 8px 12px; font-size: 13px; outline: none; }
-    input { width: 220px; background: #ffffff; color: #102030; }
-    button { cursor: pointer; background: #1976d2; color: white; font-weight: 600; transition: background 0.2s; }
-    button:hover { background: #1565c0; }
-    button.secondary { background: #405269; }
-    button.secondary:hover { background: #314154; }
-    label { font-size: 12px; display: flex; align-items: center; gap: 4px; }
-    
-    .filterbar {
-      position: absolute; z-index: 10; top: 68px; left: 12px; background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(6px); padding: 8px 12px; border-radius: 10px; box-shadow: 0 3px 15px rgba(0,0,0,0.15);
-      display: flex; gap: 10px; align-items: center; flex-wrap: wrap; color: #222;
-    }
-    .status {
-      position: absolute; z-index: 10; bottom: 16px; left: 14px;
-      background: rgba(8, 17, 29, 0.88); backdrop-filter: blur(4px); color: #fff; padding: 8px 12px;
-      border-radius: 8px; font-size: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-    }
-    .detail {
-      position: absolute; z-index: 20; top: 120px; right: 14px; width: 320px;
-      max-height: calc(100vh - 150px); overflow-y: auto; background: rgba(255,255,255,0.98);
-      border-radius: 12px; box-shadow: 0 5px 25px rgba(0,0,0,0.25); padding: 16px; display: none;
-    }
-    .detail h2 { margin: 0 0 4px; font-size: 18px; color: #102030; }
-    .mmsi { color: #667788; font-size: 12px; margin-bottom: 12px; font-weight: 600; }
-    .row { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
-    .row span { color: #555; }
-    .row b { text-align: right; max-width: 62%; color: #111; word-break: break-word; }
-    .close { float: right; cursor: pointer; font-size: 20px; color: #888; font-weight: bold; line-height: 1; }
-    .close:hover { color: #000; }
-    
-    .search-results {
-      position: absolute; z-index: 15; top: 60px; left: 240px; background: #fff;
-      width: 300px; max-height: 300px; overflow-y: auto; border-radius: 9px;
-      box-shadow: 0 5px 18px rgba(0,0,0,0.25); display: none;
-    }
-    .result { padding: 10px 12px; border-bottom: 1px solid #eee; cursor: pointer; }
-    .result:hover { background: #f2f6fa; }
-    .result b { display: block; font-size: 14px; color: #1976d2; }
-    .result span { font-size: 11px; color: #666; }
 
-    @media (max-width: 800px) {
-      .brand { width: 100%; margin-bottom: 4px; }
-      .filterbar { top: 115px; left: 12px; right: 12px; }
-      .detail { left: 12px; right: 12px; width: auto; top: auto; bottom: 60px; }
-      .search-results { left: 12px; top: 115px; width: calc(100% - 24px); }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body, #map { margin: 0; padding: 0; width: 100%; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; overflow: hidden; }
+
+    /* Top Navigation Bar */
+    .topbar {
+      position: absolute; top: 12px; left: 12px; right: 12px; z-index: 10;
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      background: var(--bg-dark); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      padding: 8px 12px; border-radius: var(--radius); box-shadow: var(--shadow);
+      border: 1px solid rgba(255, 255, 255, 0.1); color: #fff;
     }
+    .brand { font-weight: 800; font-size: 16px; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+    
+    .search-box { display: flex; flex: 1; max-width: 320px; gap: 6px; position: relative; }
+    .search-box input {
+      width: 100%; background: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 10px; padding: 8px 12px; color: #fff; font-size: 13px; outline: none; transition: 0.2s;
+    }
+    .search-box input::placeholder { color: #94a3b8; }
+    .search-box input:focus { background: rgba(255, 255, 255, 0.25); border-color: var(--primary); }
+
+    .btn {
+      border: 0; border-radius: 10px; padding: 8px 14px; font-size: 13px; font-weight: 600;
+      cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      transition: all 0.2s ease; outline: none; white-space: nowrap;
+    }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-secondary { background: rgba(255, 255, 255, 0.15); color: #fff; }
+    .btn-secondary:hover { background: rgba(255, 255, 255, 0.25); }
+    .btn-install { background: var(--accent); color: #fff; display: none; }
+
+    /* Floating Filter Toggle for Mobile & Filter Bar */
+    .filter-bar {
+      position: absolute; top: 68px; left: 12px; z-index: 10;
+      background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);
+      padding: 10px 14px; border-radius: 12px; box-shadow: var(--shadow);
+      display: flex; gap: 12px; align-items: center; flex-wrap: wrap; font-size: 12px; color: var(--text-main);
+      border: 1px solid rgba(255, 255, 255, 0.6); transition: transform 0.3s ease;
+    }
+    .filter-group { display: flex; align-items: center; gap: 6px; }
+    .filter-group select, .filter-group input {
+      border: 1px solid var(--border-color); border-radius: 8px; padding: 6px 8px; font-size: 12px; outline: none; background: #fff;
+    }
+
+    /* Floating Status Pill */
+    .status-pill {
+      position: absolute; bottom: 16px; left: 14px; z-index: 10;
+      background: var(--bg-dark); backdrop-filter: blur(8px); color: #e2e8f0;
+      padding: 6px 12px; border-radius: 20px; font-size: 11px; font-weight: 500;
+      box-shadow: var(--shadow); border: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex; align-items: center; gap: 6px;
+    }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); display: inline-block; }
+
+    /* Detail Modal / Bottom Sheet */
+    .detail-card {
+      position: absolute; top: 70px; right: 14px; z-index: 20; width: 340px;
+      max-height: calc(100vh - 100px); overflow-y: auto; background: var(--bg-card);
+      border-radius: var(--radius); box-shadow: var(--shadow); padding: 20px; display: none;
+      animation: fadeIn 0.25s ease-out; border: 1px solid var(--border-color);
+    }
+    .detail-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+    .detail-header h2 { margin: 0; font-size: 18px; color: var(--text-main); font-weight: 700; }
+    .detail-header .mmsi { font-size: 12px; color: var(--text-muted); font-weight: 600; margin-top: 2px; }
+    .close-btn { background: #f1f5f9; border: 0; border-radius: 50%; width: 28px; height: 28px; font-size: 16px; cursor: pointer; color: var(--text-muted); }
+
+    .info-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f1f5f9; font-size: 12px; }
+    .info-row span { color: var(--text-muted); }
+    .info-row b { color: var(--text-main); font-weight: 600; text-align: right; max-width: 60%; word-break: break-word; }
+
+    /* Search Results List */
+    .search-results {
+      position: absolute; top: 60px; left: 12px; z-index: 15; width: 320px;
+      max-height: 280px; overflow-y: auto; background: #fff; border-radius: 12px;
+      box-shadow: var(--shadow); border: 1px solid var(--border-color); display: none;
+    }
+    .search-item { padding: 10px 14px; border-bottom: 1px solid #f1f5f9; cursor: pointer; transition: 0.15s; }
+    .search-item:hover { background: #f8fafc; }
+    .search-item b { display: block; font-size: 13px; color: var(--primary); }
+    .search-item span { font-size: 11px; color: var(--text-muted); }
+
+    /* Responsive adjustments for Mobile/Tablet */
+    @media (max-width: 768px) {
+      .topbar { flex-wrap: wrap; }
+      .brand { font-size: 15px; }
+      .search-box { order: 3; max-width: 100%; width: 100%; margin-top: 4px; }
+      .filter-bar { top: auto; bottom: 50px; left: 12px; right: 12px; overflow-x: auto; white-space: nowrap; flex-wrap: nowrap; }
+      .search-results { top: 110px; left: 12px; right: 12px; width: auto; }
+      
+      /* Turn Detail Card into Bottom Sheet on Mobile */
+      .detail-card {
+        top: auto; bottom: 0; left: 0; right: 0; width: 100%; max-height: 70vh;
+        border-radius: 20px 20px 0 0; padding: 20px 20px 30px; border: 0;
+      }
+    }
+
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
   </style>
 </head>
 <body>
 
 <div id="map"></div>
 
+<!-- Topbar Header -->
 <div class="topbar">
   <div class="brand">🚢 AIS INDONESIA</div>
-  <input id="search" type="text" placeholder="Cari MMSI / nama kapal...">
-  <button onclick="searchVessel()">Cari</button>
-  <button class="secondary" onclick="reloadAIS()">↻ Update</button>
-  <label><input id="auto" type="checkbox" checked style="width:auto"> Auto</label>
+  <div class="search-box">
+    <input id="search" type="text" placeholder="Cari MMSI / Nama Kapal...">
+  </div>
+  <button class="btn btn-primary" onclick="searchVessel()">Cari</button>
+  <button class="btn btn-secondary" onclick="reloadAIS()">↻</button>
+  <button id="btnInstall" class="btn btn-install" onclick="installPWA()">📲 Install</button>
 </div>
 
-<div class="filterbar">
-  <label>Jenis:
+<!-- Filter Control Bar -->
+<div class="filter-bar">
+  <div class="filter-group">
+    <label>Jenis:</label>
     <select id="type">
-      <option value="">Semua kapal</option>
+      <option value="">Semua Jenis</option>
       <option value="70-79">Cargo</option>
       <option value="80-89">Tanker</option>
       <option value="60-69">Passenger</option>
       <option value="30">Fishing</option>
       <option value="31-35">Towing / Special</option>
-      <option value="36,37">Sailing / Pleasure</option>
-      <option value="50-59">Pilot / SAR / Special</option>
     </select>
-  </label>
-  <label>Class:
+  </div>
+  <div class="filter-group">
+    <label>Kelas:</label>
     <select id="class">
       <option value="">A + B</option>
       <option value="A">A</option>
       <option value="B">B</option>
     </select>
-  </label>
-  <label>Min SOG:
-    <input id="minSog" type="number" min="0" step="0.5" placeholder="kn" style="width:65px">
-  </label>
-  <label>Interval:
-    <select id="interval">
-      <option value="15">15s</option>
-      <option value="30" selected>30s</option>
-      <option value="60">60s</option>
-    </select>
-  </label>
+  </div>
+  <div class="filter-group">
+    <label>Min Kn:</label>
+    <input id="minSog" type="number" min="0" step="0.5" placeholder="0" style="width:50px">
+  </div>
+  <div class="filter-group">
+    <label><input id="auto" type="checkbox" checked> Auto Update</label>
+  </div>
 </div>
 
 <div id="results" class="search-results"></div>
-<div id="detail" class="detail"></div>
-<div id="status" class="status">Inisialisasi Peta AIS...</div>
+<div id="detail" class="detail-card"></div>
+<div id="status" class="status-pill"><span class="status-dot"></span><span id="status-text">Inisialisasi Peta...</span></div>
 
 <script>
 // GANTI DENGAN URL WEB APP GOOGLE APPS SCRIPT ANDA
 const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbzQ1_wKxbyxM-GfpACoIQ7aeI3DIRlIwoUBIMwM14IHJofFGWuZtxGZ8JhuvXfOXx8J/exec';
 
 let timer = null;
-const statusEl = document.getElementById('status');
+let deferredPrompt = null;
 
 function setStatus(msg) {
-  statusEl.textContent = msg;
+  document.getElementById('status-text').textContent = msg;
 }
 
 function esc(str) {
@@ -144,20 +205,16 @@ const map = new maplibregl.Map({
         type: 'raster',
         tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
         tileSize: 256,
-        attribution: '© OpenStreetMap contributors'
+        attribution: '© OpenStreetMap'
       }
     },
-    layers: [{
-      id: 'osm',
-      type: 'raster',
-      source: 'osm'
-    }]
+    layers: [{ id: 'osm', type: 'raster', source: 'osm' }]
   },
   center: [118, -2.5],
   zoom: 4.8
 });
 
-map.addControl(new maplibregl.NavigationControl(), 'top-right');
+map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right');
 
 map.on('load', () => {
   addShipImage();
@@ -169,17 +226,14 @@ function currentFilters() {
     type: document.getElementById('type').value,
     class: document.getElementById('class').value,
     minSog: document.getElementById('minSog').value,
-    maxAgeMoving: '30m',
-    maxAge: '7d'
   };
 }
 
 function addShipImage() {
   if (map.hasImage('ship-icon')) return;
-
   const svg = 
     '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">'+
-    '<path d="M32 3 L50 51 L41 58 L32 55 L23 58 L14 51 Z" fill="#0d72b8" stroke="white" stroke-width="3"/>'+
+    '<path d="M32 3 L50 51 L41 58 L32 55 L23 58 L14 51 Z" fill="#0284c7" stroke="white" stroke-width="3"/>'+
     '<path d="M32 10 L32 51" stroke="white" stroke-width="3"/>'+
     '</svg>';
 
@@ -196,19 +250,14 @@ function removeAISLayer() {
 
 function loadTiles(info) {
   removeAISLayer();
-
   const tileUrl = info && info.tiles && info.tiles[0];
-  if (!tileUrl) {
-    setStatus('Gagal memuat: Tile URL Open Waters tidak tersedia.');
-    return;
-  }
+  if (!tileUrl) { setStatus('Tile URL tidak tersedia.'); return; }
 
   map.addSource('ais', {
     type: 'vector',
     tiles: [tileUrl],
     minzoom: info.minzoom ?? 0,
-    maxzoom: info.maxzoom ?? 14,
-    attribution: 'Open Waters AIS'
+    maxzoom: info.maxzoom ?? 14
   });
 
   map.addLayer({
@@ -218,21 +267,11 @@ function loadTiles(info) {
     'source-layer': 'vessels',
     layout: {
       'icon-image': 'ship-icon',
-      'icon-size': [
-        'interpolate', ['linear'], ['zoom'],
-        3, 0.18, 6, 0.28, 9, 0.42, 14, 0.55
-      ],
+      'icon-size': ['interpolate', ['linear'], ['zoom'], 3, 0.18, 6, 0.28, 9, 0.42, 14, 0.55],
       'icon-rotate': ['coalesce', ['get', 'hdg'], ['get', 'heading'], ['get', 'cog'], 0],
       'icon-rotation-alignment': 'map',
       'icon-pitch-alignment': 'map',
-      'icon-allow-overlap': true,
-      'icon-ignore-placement': true
-    },
-    paint: {
-      'icon-opacity': [
-        'interpolate', ['linear'], ['coalesce', ['get', 'age_s'], 0],
-        0, 1.0, 900, 0.95, 1800, 0.65, 3600, 0.35
-      ]
+      'icon-allow-overlap': true
     }
   });
 
@@ -245,27 +284,19 @@ function loadTiles(info) {
     layout: {
       'text-field': ['coalesce', ['get', 'name'], ['get', 'mmsi'], ''],
       'text-size': 10,
-      'text-offset': [0, 2.4],
+      'text-offset': [0, 2.2],
       'text-anchor': 'top'
     },
-    paint: {
-      'text-color': '#102030',
-      'text-halo-color': '#ffffff',
-      'text-halo-width': 1.5
-    }
+    paint: { 'text-color': '#0f172a', 'text-halo-color': '#ffffff', 'text-halo-width': 1.5 }
   });
 
   map.off('click', 'ais-vessels', onShipClick);
   map.on('click', 'ais-vessels', onShipClick);
-  
-  map.on('mouseenter', 'ais-vessels', () => map.getCanvas().style.cursor = 'pointer');
-  map.on('mouseleave', 'ais-vessels', () => map.getCanvas().style.cursor = '');
-
-  setStatus('AIS Aktif • ' + new Date().toLocaleTimeString('id-ID'));
+  setStatus('Sistem Aktif • ' + new Date().toLocaleTimeString('id-ID'));
 }
 
 async function reloadAIS() {
-  setStatus('Memuat data AIS dari Backend...');
+  setStatus('Diperbarui...');
   const filters = currentFilters();
   const queryParams = new URLSearchParams({
     action: 'getTileJSON',
@@ -287,7 +318,6 @@ async function reloadAIS() {
 async function onShipClick(e) {
   const f = e.features && e.features[0];
   if (!f) return;
-  
   const p = f.properties || {};
   const mmsi = p.mmsi || f.id;
   if (!mmsi) return;
@@ -297,11 +327,9 @@ async function onShipClick(e) {
   }
 
   showDetailLoading();
-
   try {
     const response = await fetch(`${GAS_API_URL}?action=getVessel&mmsi=${encodeURIComponent(mmsi)}`);
     const data = await response.json();
-    if (data.error) throw new Error(data.message);
     showDetail(data);
   } catch (err) {
     showDetail(f);
@@ -311,7 +339,7 @@ async function onShipClick(e) {
 function showDetailLoading() {
   const d = document.getElementById('detail');
   d.style.display = 'block';
-  d.innerHTML = '<b>Memuat detail kapal...</b>';
+  d.innerHTML = '<b>Memuat info kapal...</b>';
 }
 
 function showDetail(data) {
@@ -319,144 +347,101 @@ function showDetail(data) {
   const pos = data.geometry && data.geometry.coordinates;
   const lat = pos ? Number(pos[1]).toFixed(5) : '-';
   const lon = pos ? Number(pos[0]).toFixed(5) : '-';
-  const x = p.particulars || {};
 
   const d = document.getElementById('detail');
   d.style.display = 'block';
-  d.innerHTML =
-    '<span class="close" onclick="closeDetail()">×</span>' +
-    '<h2>' + esc(p.name || 'UNKNOWN') + '</h2>' +
-    '<div class="mmsi">MMSI ' + esc(p.mmsi || '-') + '</div>' +
-    row('Jenis', shipType(p.type)) +
-    row('IMO', x.imo || p.imo) +
-    row('Call Sign', x.call_sign || p.call_sign) +
-    row('Class', p.class) +
-    row('Flag', p.flag) +
-    row('SOG', p.sog != null ? p.sog + ' kn' : null) +
-    row('COG', p.cog != null ? p.cog + '°' : null) +
-    row('Heading', p.heading != null ? p.heading + '°' : null) +
-    row('Nav Status', navStatus(p.nav_status)) +
-    row('Destination', p.destination) +
-    row('ETA', p.eta) +
-    row('Posisi', lat + ', ' + lon) +
-    row('Terakhir Terlihat', p.seen) +
-    row('Sumber', p.source);
+  d.innerHTML = `
+    <div class="detail-header">
+      <div>
+        <h2>${esc(p.name || 'UNKNOWN')}</h2>
+        <div class="mmsi">MMSI ${esc(p.mmsi || '-')}</div>
+      </div>
+      <button class="close-btn" onclick="closeDetail()">×</button>
+    </div>
+    ${row('Jenis', p.type)}
+    ${row('Bendera', p.flag)}
+    ${row('Kecepatan (SOG)', p.sog != null ? p.sog + ' kn' : '-')}
+    ${row('Arah (COG)', p.cog != null ? p.cog + '°' : '-')}
+    ${row('Tujuan', p.destination)}
+    ${row('ETA', p.eta)}
+    ${row('Koordinat', lat + ', ' + lon)}
+    ${row('Update Terakhir', p.seen)}
+  `;
 }
 
 function row(a, b) {
-  return '<div class="row"><span>' + esc(a) + '</span><b>' + esc(b == null || b === '' ? '-' : b) + '</b></div>';
+  return `<div class="info-row"><span>${esc(a)}</span><b>${esc(b == null || b === '' ? '-' : b)}</b></div>`;
 }
 
-function shipType(t) {
-  const n = Number(t);
-  if (!Number.isFinite(n)) return 'Unknown';
-  if (n >= 70 && n <= 79) return 'Cargo';
-  if (n >= 80 && n <= 89) return 'Tanker';
-  if (n >= 60 && n <= 69) return 'Passenger';
-  if (n === 30) return 'Fishing';
-  if (n >= 31 && n <= 35) return 'Towing / Special';
-  if (n === 36 || n === 37) return 'Sailing / Pleasure';
-  if (n >= 50 && n <= 59) return 'Pilot / SAR / Special';
-  return 'Type ' + n;
-}
-
-function navStatus(n) {
-  const m = {
-    0: 'Under way using engine', 1: 'At anchor', 2: 'Not under command',
-    3: 'Restricted manoeuvrability', 4: 'Constrained by draught',
-    5: 'Moored', 6: 'Aground', 7: 'Engaged in fishing',
-    8: 'Under way sailing', 14: 'AIS-SART / MOB', 15: 'Undefined'
-  };
-  return m[Number(n)] || (n != null ? 'Status ' + n : '-');
-}
-
-function closeDetail() {
-  document.getElementById('detail').style.display = 'none';
-}
+function closeDetail() { document.getElementById('detail').style.display = 'none'; }
 
 async function searchVessel() {
   const q = document.getElementById('search').value.trim();
-  if (q.length < 2) {
-    setStatus('Masukkan minimal 2 karakter untuk pencarian.');
-    return;
-  }
-
-  setStatus('Mencari ' + q + '...');
-
+  if (q.length < 2) return;
+  setStatus('Mencari...');
   try {
     const response = await fetch(`${GAS_API_URL}?action=searchVessels&q=${encodeURIComponent(q)}`);
     const fc = await response.json();
-    if (fc.error) throw new Error(fc.message);
     showSearchResults(fc);
   } catch (e) {
-    setStatus('Error pencarian: ' + e.message);
+    setStatus('Gagal mencari');
   }
 }
 
 function showSearchResults(fc) {
   const box = document.getElementById('results');
-  const fs = (fc && fc.features) ? fc.features : [];
+  const fs = fc.features || [];
   box.innerHTML = '';
 
   if (!fs.length) {
-    box.innerHTML = '<div class="result">Kapal tidak ditemukan.</div>';
-    box.style.display = 'block';
-    return;
-  }
-
-  fs.forEach(f => {
-    const p = f.properties || {};
-    const el = document.createElement('div');
-    el.className = 'result';
-    el.innerHTML = '<b>' + esc(p.name || 'UNKNOWN') + '</b><span>MMSI ' + esc(p.mmsi || f.id) + '</span>';
-    el.onclick = async () => {
-      box.style.display = 'none';
-      const c = f.geometry && f.geometry.coordinates;
-      if (c) map.flyTo({ center: c, zoom: 10, duration: 900 });
-
-      try {
-        const response = await fetch(`${GAS_API_URL}?action=getVessel&mmsi=${encodeURIComponent(p.mmsi || f.id)}`);
-        const data = await response.json();
-        showDetail(data);
-      } catch (e) {
+    box.innerHTML = '<div class="search-item">Kapal tidak ditemukan.</div>';
+  } else {
+    fs.forEach(f => {
+      const p = f.properties || {};
+      const el = document.createElement('div');
+      el.className = 'search-item';
+      el.innerHTML = `<b>${esc(p.name || 'UNKNOWN')}</b><span>MMSI ${esc(p.mmsi || f.id)}</span>`;
+      el.onclick = () => {
+        box.style.display = 'none';
+        if (f.geometry && f.geometry.coordinates) {
+          map.flyTo({ center: f.geometry.coordinates, zoom: 10 });
+        }
         showDetail(f);
-      }
-    };
-    box.appendChild(el);
-  });
-
+      };
+      box.appendChild(el);
+    });
+  }
   box.style.display = 'block';
-  setStatus(fs.length + ' hasil pencarian ditemukan.');
+}
+
+// Service Worker & PWA Install Listener
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js');
+}
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById('btnInstall').style.display = 'inline-flex';
+});
+
+function installPWA() {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(() => {
+      document.getElementById('btnInstall').style.display = 'none';
+      deferredPrompt = null;
+    });
+  }
 }
 
 // Event Listeners
-document.getElementById('search').addEventListener('keydown', e => {
-  if (e.key === 'Enter') searchVessel();
-});
+document.getElementById('search').addEventListener('keydown', e => { if (e.key === 'Enter') searchVessel(); });
+['type', 'class', 'minSog'].forEach(id => document.getElementById(id).addEventListener('change', reloadAIS));
 
-document.addEventListener('click', e => {
-  if (!e.target.closest('#results') && !e.target.closest('#search')) {
-    document.getElementById('results').style.display = 'none';
-  }
-});
-
-['type', 'class', 'minSog'].forEach(id => {
-  document.getElementById(id).addEventListener('change', reloadAIS);
-});
-
-document.getElementById('interval').addEventListener('change', setupTimer);
-document.getElementById('auto').addEventListener('change', setupTimer);
-
-function setupTimer() {
-  if (timer) clearInterval(timer);
-  timer = null;
-  if (document.getElementById('auto').checked) {
-    const sec = Math.max(15, Number(document.getElementById('interval').value) || 30);
-    timer = setInterval(reloadAIS, sec * 1000);
-  }
-}
-
-setupTimer();
+setInterval(() => {
+  if (document.getElementById('auto').checked) reloadAIS();
+}, 30000);
 </script>
 </body>
 </html>
