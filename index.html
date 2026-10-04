@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AIS Indonesia</title>
+
+  <!-- MapLibre GL JS -->
+  <link href="https://unpkg.com/maplibre-gl@5.7.0/dist/maplibre-gl.css" rel="stylesheet">
+  <script src="https://unpkg.com/maplibre-gl@5.7.0/dist/maplibre-gl.js"></script>
+
+  <style>
+    * { box-sizing: border-box; }
+    html, body, #map { margin: 0; width: 100%; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; }
+    
+    .topbar {
+      position: absolute; z-index: 10; top: 12px; left: 12px; right: 12px;
+      display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+      background: rgba(8, 17, 29, 0.92); backdrop-filter: blur(8px); color: #fff; padding: 10px 14px;
+      border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+    }
+    .brand { font-weight: 700; font-size: 17px; margin-right: 8px; letter-spacing: 0.5px; }
+    input, select, button { border: 0; border-radius: 8px; padding: 8px 12px; font-size: 13px; outline: none; }
+    input { width: 220px; background: #ffffff; color: #102030; }
+    button { cursor: pointer; background: #1976d2; color: white; font-weight: 600; transition: background 0.2s; }
+    button:hover { background: #1565c0; }
+    button.secondary { background: #405269; }
+    button.secondary:hover { background: #314154; }
+    label { font-size: 12px; display: flex; align-items: center; gap: 4px; }
+    
+    .filterbar {
+      position: absolute; z-index: 10; top: 68px; left: 12px; background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(6px); padding: 8px 12px; border-radius: 10px; box-shadow: 0 3px 15px rgba(0,0,0,0.15);
+      display: flex; gap: 10px; align-items: center; flex-wrap: wrap; color: #222;
+    }
+    .status {
+      position: absolute; z-index: 10; bottom: 16px; left: 14px;
+      background: rgba(8, 17, 29, 0.88); backdrop-filter: blur(4px); color: #fff; padding: 8px 12px;
+      border-radius: 8px; font-size: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    }
+    .detail {
+      position: absolute; z-index: 20; top: 120px; right: 14px; width: 320px;
+      max-height: calc(100vh - 150px); overflow-y: auto; background: rgba(255,255,255,0.98);
+      border-radius: 12px; box-shadow: 0 5px 25px rgba(0,0,0,0.25); padding: 16px; display: none;
+    }
+    .detail h2 { margin: 0 0 4px; font-size: 18px; color: #102030; }
+    .mmsi { color: #667788; font-size: 12px; margin-bottom: 12px; font-weight: 600; }
+    .row { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+    .row span { color: #555; }
+    .row b { text-align: right; max-width: 62%; color: #111; word-break: break-word; }
+    .close { float: right; cursor: pointer; font-size: 20px; color: #888; font-weight: bold; line-height: 1; }
+    .close:hover { color: #000; }
+    
+    .search-results {
+      position: absolute; z-index: 15; top: 60px; left: 240px; background: #fff;
+      width: 300px; max-height: 300px; overflow-y: auto; border-radius: 9px;
+      box-shadow: 0 5px 18px rgba(0,0,0,0.25); display: none;
+    }
+    .result { padding: 10px 12px; border-bottom: 1px solid #eee; cursor: pointer; }
+    .result:hover { background: #f2f6fa; }
+    .result b { display: block; font-size: 14px; color: #1976d2; }
+    .result span { font-size: 11px; color: #666; }
+
+    @media (max-width: 800px) {
+      .brand { width: 100%; margin-bottom: 4px; }
+      .filterbar { top: 115px; left: 12px; right: 12px; }
+      .detail { left: 12px; right: 12px; width: auto; top: auto; bottom: 60px; }
+      .search-results { left: 12px; top: 115px; width: calc(100% - 24px); }
+    }
+  </style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<div class="topbar">
+  <div class="brand">🚢 AIS INDONESIA</div>
+  <input id="search" type="text" placeholder="Cari MMSI / nama kapal...">
+  <button onclick="searchVessel()">Cari</button>
+  <button class="secondary" onclick="reloadAIS()">↻ Update</button>
+  <label><input id="auto" type="checkbox" checked style="width:auto"> Auto</label>
+</div>
+
+<div class="filterbar">
+  <label>Jenis:
+    <select id="type">
+      <option value="">Semua kapal</option>
+      <option value="70-79">Cargo</option>
+      <option value="80-89">Tanker</option>
+      <option value="60-69">Passenger</option>
+      <option value="30">Fishing</option>
+      <option value="31-35">Towing / Special</option>
+      <option value="36,37">Sailing / Pleasure</option>
+      <option value="50-59">Pilot / SAR / Special</option>
+    </select>
+  </label>
+  <label>Class:
+    <select id="class">
+      <option value="">A + B</option>
+      <option value="A">A</option>
+      <option value="B">B</option>
+    </select>
+  </label>
+  <label>Min SOG:
+    <input id="minSog" type="number" min="0" step="0.5" placeholder="kn" style="width:65px">
+  </label>
+  <label>Interval:
+    <select id="interval">
+      <option value="15">15s</option>
+      <option value="30" selected>30s</option>
+      <option value="60">60s</option>
+    </select>
+  </label>
+</div>
+
+<div id="results" class="search-results"></div>
+<div id="detail" class="detail"></div>
+<div id="status" class="status">Inisialisasi Peta AIS...</div>
+
+<script>
+// GANTI DENGAN URL WEB APP GOOGLE APPS SCRIPT ANDA
+const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbzQ1_wKxbyxM-GfpACoIQ7aeI3DIRlIwoUBIMwM14IHJofFGWuZtxGZ8JhuvXfOXx8J/exec';
+
+let timer = null;
+const statusEl = document.getElementById('status');
+
+function setStatus(msg) {
+  statusEl.textContent = msg;
+}
+
+function esc(str) {
+  return String(str ?? '-').replace(/[&<>"']/g, c => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[c]));
+}
+
+// Inisialisasi MapLibre GL
+const map = new maplibregl.Map({
+  container: 'map',
+  style: {
+    version: 8,
+    sources: {
+      osm: {
+        type: 'raster',
+        tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+        tileSize: 256,
+        attribution: '© OpenStreetMap contributors'
+      }
+    },
+    layers: [{
+      id: 'osm',
+      type: 'raster',
+      source: 'osm'
+    }]
+  },
+  center: [118, -2.5],
+  zoom: 4.8
+});
+
+map.addControl(new maplibregl.NavigationControl(), 'top-right');
+
+map.on('load', () => {
+  addShipImage();
+  reloadAIS();
+});
+
+function currentFilters() {
+  return {
+    type: document.getElementById('type').value,
+    class: document.getElementById('class').value,
+    minSog: document.getElementById('minSog').value,
+    maxAgeMoving: '30m',
+    maxAge: '7d'
+  };
+}
+
+function addShipImage() {
+  if (map.hasImage('ship-icon')) return;
+
+  const svg = 
+    '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">'+
+    '<path d="M32 3 L50 51 L41 58 L32 55 L23 58 L14 51 Z" fill="#0d72b8" stroke="white" stroke-width="3"/>'+
+    '<path d="M32 10 L32 51" stroke="white" stroke-width="3"/>'+
+    '</svg>';
+
+  const img = new Image(64, 64);
+  img.onload = () => map.addImage('ship-icon', img, { sdf: false });
+  img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+}
+
+function removeAISLayer() {
+  if (map.getLayer('ais-labels')) map.removeLayer('ais-labels');
+  if (map.getLayer('ais-vessels')) map.removeLayer('ais-vessels');
+  if (map.getSource('ais')) map.removeSource('ais');
+}
+
+function loadTiles(info) {
+  removeAISLayer();
+
+  const tileUrl = info && info.tiles && info.tiles[0];
+  if (!tileUrl) {
+    setStatus('Gagal memuat: Tile URL Open Waters tidak tersedia.');
+    return;
+  }
+
+  map.addSource('ais', {
+    type: 'vector',
+    tiles: [tileUrl],
+    minzoom: info.minzoom ?? 0,
+    maxzoom: info.maxzoom ?? 14,
+    attribution: 'Open Waters AIS'
+  });
+
+  map.addLayer({
+    id: 'ais-vessels',
+    type: 'symbol',
+    source: 'ais',
+    'source-layer': 'vessels',
+    layout: {
+      'icon-image': 'ship-icon',
+      'icon-size': [
+        'interpolate', ['linear'], ['zoom'],
+        3, 0.18, 6, 0.28, 9, 0.42, 14, 0.55
+      ],
+      'icon-rotate': ['coalesce', ['get', 'hdg'], ['get', 'heading'], ['get', 'cog'], 0],
+      'icon-rotation-alignment': 'map',
+      'icon-pitch-alignment': 'map',
+      'icon-allow-overlap': true,
+      'icon-ignore-placement': true
+    },
+    paint: {
+      'icon-opacity': [
+        'interpolate', ['linear'], ['coalesce', ['get', 'age_s'], 0],
+        0, 1.0, 900, 0.95, 1800, 0.65, 3600, 0.35
+      ]
+    }
+  });
+
+  map.addLayer({
+    id: 'ais-labels',
+    type: 'symbol',
+    source: 'ais',
+    'source-layer': 'vessels',
+    minzoom: 7,
+    layout: {
+      'text-field': ['coalesce', ['get', 'name'], ['get', 'mmsi'], ''],
+      'text-size': 10,
+      'text-offset': [0, 2.4],
+      'text-anchor': 'top'
+    },
+    paint: {
+      'text-color': '#102030',
+      'text-halo-color': '#ffffff',
+      'text-halo-width': 1.5
+    }
+  });
+
+  map.off('click', 'ais-vessels', onShipClick);
+  map.on('click', 'ais-vessels', onShipClick);
+  
+  map.on('mouseenter', 'ais-vessels', () => map.getCanvas().style.cursor = 'pointer');
+  map.on('mouseleave', 'ais-vessels', () => map.getCanvas().style.cursor = '');
+
+  setStatus('AIS Aktif • ' + new Date().toLocaleTimeString('id-ID'));
+}
+
+async function reloadAIS() {
+  setStatus('Memuat data AIS dari Backend...');
+  const filters = currentFilters();
+  const queryParams = new URLSearchParams({
+    action: 'getTileJSON',
+    type: filters.type,
+    class: filters.class,
+    minSog: filters.minSog
+  });
+
+  try {
+    const response = await fetch(`${GAS_API_URL}?${queryParams.toString()}`);
+    const info = await response.json();
+    if (info.error) throw new Error(info.message);
+    loadTiles(info);
+  } catch (e) {
+    setStatus('Error: ' + e.message);
+  }
+}
+
+async function onShipClick(e) {
+  const f = e.features && e.features[0];
+  if (!f) return;
+  
+  const p = f.properties || {};
+  const mmsi = p.mmsi || f.id;
+  if (!mmsi) return;
+
+  if (f.geometry && f.geometry.coordinates) {
+    map.flyTo({ center: f.geometry.coordinates, zoom: Math.max(map.getZoom(), 9), duration: 800 });
+  }
+
+  showDetailLoading();
+
+  try {
+    const response = await fetch(`${GAS_API_URL}?action=getVessel&mmsi=${encodeURIComponent(mmsi)}`);
+    const data = await response.json();
+    if (data.error) throw new Error(data.message);
+    showDetail(data);
+  } catch (err) {
+    showDetail(f);
+  }
+}
+
+function showDetailLoading() {
+  const d = document.getElementById('detail');
+  d.style.display = 'block';
+  d.innerHTML = '<b>Memuat detail kapal...</b>';
+}
+
+function showDetail(data) {
+  const p = data.properties || data || {};
+  const pos = data.geometry && data.geometry.coordinates;
+  const lat = pos ? Number(pos[1]).toFixed(5) : '-';
+  const lon = pos ? Number(pos[0]).toFixed(5) : '-';
+  const x = p.particulars || {};
+
+  const d = document.getElementById('detail');
+  d.style.display = 'block';
+  d.innerHTML =
+    '<span class="close" onclick="closeDetail()">×</span>' +
+    '<h2>' + esc(p.name || 'UNKNOWN') + '</h2>' +
+    '<div class="mmsi">MMSI ' + esc(p.mmsi || '-') + '</div>' +
+    row('Jenis', shipType(p.type)) +
+    row('IMO', x.imo || p.imo) +
+    row('Call Sign', x.call_sign || p.call_sign) +
+    row('Class', p.class) +
+    row('Flag', p.flag) +
+    row('SOG', p.sog != null ? p.sog + ' kn' : null) +
+    row('COG', p.cog != null ? p.cog + '°' : null) +
+    row('Heading', p.heading != null ? p.heading + '°' : null) +
+    row('Nav Status', navStatus(p.nav_status)) +
+    row('Destination', p.destination) +
+    row('ETA', p.eta) +
+    row('Posisi', lat + ', ' + lon) +
+    row('Terakhir Terlihat', p.seen) +
+    row('Sumber', p.source);
+}
+
+function row(a, b) {
+  return '<div class="row"><span>' + esc(a) + '</span><b>' + esc(b == null || b === '' ? '-' : b) + '</b></div>';
+}
+
+function shipType(t) {
+  const n = Number(t);
+  if (!Number.isFinite(n)) return 'Unknown';
+  if (n >= 70 && n <= 79) return 'Cargo';
+  if (n >= 80 && n <= 89) return 'Tanker';
+  if (n >= 60 && n <= 69) return 'Passenger';
+  if (n === 30) return 'Fishing';
+  if (n >= 31 && n <= 35) return 'Towing / Special';
+  if (n === 36 || n === 37) return 'Sailing / Pleasure';
+  if (n >= 50 && n <= 59) return 'Pilot / SAR / Special';
+  return 'Type ' + n;
+}
+
+function navStatus(n) {
+  const m = {
+    0: 'Under way using engine', 1: 'At anchor', 2: 'Not under command',
+    3: 'Restricted manoeuvrability', 4: 'Constrained by draught',
+    5: 'Moored', 6: 'Aground', 7: 'Engaged in fishing',
+    8: 'Under way sailing', 14: 'AIS-SART / MOB', 15: 'Undefined'
+  };
+  return m[Number(n)] || (n != null ? 'Status ' + n : '-');
+}
+
+function closeDetail() {
+  document.getElementById('detail').style.display = 'none';
+}
+
+async function searchVessel() {
+  const q = document.getElementById('search').value.trim();
+  if (q.length < 2) {
+    setStatus('Masukkan minimal 2 karakter untuk pencarian.');
+    return;
+  }
+
+  setStatus('Mencari ' + q + '...');
+
+  try {
+    const response = await fetch(`${GAS_API_URL}?action=searchVessels&q=${encodeURIComponent(q)}`);
+    const fc = await response.json();
+    if (fc.error) throw new Error(fc.message);
+    showSearchResults(fc);
+  } catch (e) {
+    setStatus('Error pencarian: ' + e.message);
+  }
+}
+
+function showSearchResults(fc) {
+  const box = document.getElementById('results');
+  const fs = (fc && fc.features) ? fc.features : [];
+  box.innerHTML = '';
+
+  if (!fs.length) {
+    box.innerHTML = '<div class="result">Kapal tidak ditemukan.</div>';
+    box.style.display = 'block';
+    return;
+  }
+
+  fs.forEach(f => {
+    const p = f.properties || {};
+    const el = document.createElement('div');
+    el.className = 'result';
+    el.innerHTML = '<b>' + esc(p.name || 'UNKNOWN') + '</b><span>MMSI ' + esc(p.mmsi || f.id) + '</span>';
+    el.onclick = async () => {
+      box.style.display = 'none';
+      const c = f.geometry && f.geometry.coordinates;
+      if (c) map.flyTo({ center: c, zoom: 10, duration: 900 });
+
+      try {
+        const response = await fetch(`${GAS_API_URL}?action=getVessel&mmsi=${encodeURIComponent(p.mmsi || f.id)}`);
+        const data = await response.json();
+        showDetail(data);
+      } catch (e) {
+        showDetail(f);
+      }
+    };
+    box.appendChild(el);
+  });
+
+  box.style.display = 'block';
+  setStatus(fs.length + ' hasil pencarian ditemukan.');
+}
+
+// Event Listeners
+document.getElementById('search').addEventListener('keydown', e => {
+  if (e.key === 'Enter') searchVessel();
+});
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('#results') && !e.target.closest('#search')) {
+    document.getElementById('results').style.display = 'none';
+  }
+});
+
+['type', 'class', 'minSog'].forEach(id => {
+  document.getElementById(id).addEventListener('change', reloadAIS);
+});
+
+document.getElementById('interval').addEventListener('change', setupTimer);
+document.getElementById('auto').addEventListener('change', setupTimer);
+
+function setupTimer() {
+  if (timer) clearInterval(timer);
+  timer = null;
+  if (document.getElementById('auto').checked) {
+    const sec = Math.max(15, Number(document.getElementById('interval').value) || 30);
+    timer = setInterval(reloadAIS, sec * 1000);
+  }
+}
+
+setupTimer();
+</script>
+</body>
+</html>
