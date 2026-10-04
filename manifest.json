@@ -1,0 +1,21 @@
+{
+  "short_name": "AIS Indo",
+  "name": "AIS Indonesia - Vessel Tracker",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2942/2942076.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2942/2942076.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "./index.html",
+  "background_color": "#0b131e",
+  "theme_color": "#0b131e",
+  "display": "standalone",
+  "orientation": "any"
+}
