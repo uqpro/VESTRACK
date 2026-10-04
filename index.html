@@ -7,7 +7,7 @@
 
   <!-- PWA Metadata & Manifest -->
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#0b131e">
+  <meta id="theme-color-meta" name="theme-color" content="#0b131e">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
@@ -16,17 +16,36 @@
   <script src="https://unpkg.com/maplibre-gl@5.7.0/dist/maplibre-gl.js"></script>
 
   <style>
+    /* VARIABEL MODES */
     :root {
+      /* Theme: Dark (Default) */
       --bg-dark: rgba(11, 19, 30, 0.88);
-      --bg-card: #ffffff;
+      --bg-card: #1e293b;
+      --bg-input: rgba(255, 255, 255, 0.15);
+      --border-input: rgba(255, 255, 255, 0.2);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --border-color: #334155;
+      --panel-bg: rgba(30, 41, 59, 0.95);
+      
       --primary: #0284c7;
       --primary-hover: #0369a1;
       --accent: #10b981;
+      --radius: 16px;
+      --shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.4);
+    }
+
+    [data-theme="light"] {
+      /* Theme: Light */
+      --bg-dark: rgba(255, 255, 255, 0.92);
+      --bg-card: #ffffff;
+      --bg-input: rgba(0, 0, 0, 0.05);
+      --border-input: rgba(0, 0, 0, 0.15);
       --text-main: #0f172a;
       --text-muted: #64748b;
       --border-color: #e2e8f0;
-      --radius: 16px;
-      --shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.3);
+      --panel-bg: rgba(255, 255, 255, 0.95);
+      --shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.15);
     }
 
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -38,48 +57,61 @@
       display: flex; align-items: center; justify-content: space-between; gap: 8px;
       background: var(--bg-dark); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
       padding: 8px 12px; border-radius: var(--radius); box-shadow: var(--shadow);
-      border: 1px solid rgba(255, 255, 255, 0.1); color: #fff;
+      border: 1px solid var(--border-color); color: var(--text-main);
+      transition: background 0.3s, color 0.3s;
     }
     .brand { font-weight: 800; font-size: 16px; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px; white-space: nowrap; }
     
     .search-box { display: flex; flex: 1; max-width: 320px; gap: 6px; position: relative; }
     .search-box input {
-      width: 100%; background: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255, 255, 255, 0.2);
-      border-radius: 10px; padding: 8px 12px; color: #fff; font-size: 13px; outline: none; transition: 0.2s;
+      width: 100%; background: var(--bg-input); border: 1px solid var(--border-input);
+      border-radius: 10px; padding: 8px 12px; color: var(--text-main); font-size: 13px; outline: none; transition: 0.2s;
     }
-    .search-box input::placeholder { color: #94a3b8; }
-    .search-box input:focus { background: rgba(255, 255, 255, 0.25); border-color: var(--primary); }
+    .search-box input::placeholder { color: var(--text-muted); }
+    .search-box input:focus { border-color: var(--primary); }
 
     .btn {
-      border: 0; border-radius: 10px; padding: 8px 14px; font-size: 13px; font-weight: 600;
+      border: 0; border-radius: 10px; padding: 8px 12px; font-size: 13px; font-weight: 600;
       cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
       transition: all 0.2s ease; outline: none; white-space: nowrap;
     }
     .btn-primary { background: var(--primary); color: #fff; }
     .btn-primary:hover { background: var(--primary-hover); }
-    .btn-secondary { background: rgba(255, 255, 255, 0.15); color: #fff; }
-    .btn-secondary:hover { background: rgba(255, 255, 255, 0.25); }
+    .btn-secondary { background: var(--bg-input); color: var(--text-main); border: 1px solid var(--border-input); }
+    .btn-secondary:hover { opacity: 0.8; }
     .btn-install { background: var(--accent); color: #fff; display: none; }
 
-    /* Floating Filter Toggle for Mobile & Filter Bar */
+    /* Floating Filter Bar */
     .filter-bar {
       position: absolute; top: 68px; left: 12px; z-index: 10;
-      background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);
+      background: var(--panel-bg); backdrop-filter: blur(10px);
       padding: 10px 14px; border-radius: 12px; box-shadow: var(--shadow);
       display: flex; gap: 12px; align-items: center; flex-wrap: wrap; font-size: 12px; color: var(--text-main);
-      border: 1px solid rgba(255, 255, 255, 0.6); transition: transform 0.3s ease;
+      border: 1px solid var(--border-color); transition: background 0.3s, color 0.3s;
     }
     .filter-group { display: flex; align-items: center; gap: 6px; }
-    .filter-group select, .filter-group input {
-      border: 1px solid var(--border-color); border-radius: 8px; padding: 6px 8px; font-size: 12px; outline: none; background: #fff;
+    .filter-group select, .filter-group input[type="number"] {
+      border: 1px solid var(--border-color); border-radius: 8px; padding: 6px 8px; font-size: 12px; outline: none; 
+      background: var(--bg-card); color: var(--text-main);
     }
+
+    /* Floating Legend (Legenda Jenis Kapal) */
+    .legend-bar {
+      position: absolute; bottom: 50px; left: 14px; z-index: 10;
+      background: var(--panel-bg); backdrop-filter: blur(8px); color: var(--text-main);
+      padding: 8px 12px; border-radius: 12px; font-size: 11px;
+      box-shadow: var(--shadow); border: 1px solid var(--border-color);
+      display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+    }
+    .legend-item { display: flex; align-items: center; gap: 4px; }
+    .legend-color { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
 
     /* Floating Status Pill */
     .status-pill {
       position: absolute; bottom: 16px; left: 14px; z-index: 10;
-      background: var(--bg-dark); backdrop-filter: blur(8px); color: #e2e8f0;
+      background: var(--bg-dark); backdrop-filter: blur(8px); color: var(--text-main);
       padding: 6px 12px; border-radius: 20px; font-size: 11px; font-weight: 500;
-      box-shadow: var(--shadow); border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: var(--shadow); border: 1px solid var(--border-color);
       display: flex; align-items: center; gap: 6px;
     }
     .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); display: inline-block; }
@@ -89,37 +121,37 @@
       position: absolute; top: 70px; right: 14px; z-index: 20; width: 340px;
       max-height: calc(100vh - 100px); overflow-y: auto; background: var(--bg-card);
       border-radius: var(--radius); box-shadow: var(--shadow); padding: 20px; display: none;
-      animation: fadeIn 0.25s ease-out; border: 1px solid var(--border-color);
+      animation: fadeIn 0.25s ease-out; border: 1px solid var(--border-color); color: var(--text-main);
     }
     .detail-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
     .detail-header h2 { margin: 0; font-size: 18px; color: var(--text-main); font-weight: 700; }
     .detail-header .mmsi { font-size: 12px; color: var(--text-muted); font-weight: 600; margin-top: 2px; }
-    .close-btn { background: #f1f5f9; border: 0; border-radius: 50%; width: 28px; height: 28px; font-size: 16px; cursor: pointer; color: var(--text-muted); }
+    .close-btn { background: var(--bg-input); border: 0; border-radius: 50%; width: 28px; height: 28px; font-size: 16px; cursor: pointer; color: var(--text-muted); }
 
-    .info-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f1f5f9; font-size: 12px; }
+    .info-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border-color); font-size: 12px; }
     .info-row span { color: var(--text-muted); }
     .info-row b { color: var(--text-main); font-weight: 600; text-align: right; max-width: 60%; word-break: break-word; }
 
     /* Search Results List */
     .search-results {
       position: absolute; top: 60px; left: 12px; z-index: 15; width: 320px;
-      max-height: 280px; overflow-y: auto; background: #fff; border-radius: 12px;
-      box-shadow: var(--shadow); border: 1px solid var(--border-color); display: none;
+      max-height: 280px; overflow-y: auto; background: var(--bg-card); border-radius: 12px;
+      box-shadow: var(--shadow); border: 1px solid var(--border-color); display: none; color: var(--text-main);
     }
-    .search-item { padding: 10px 14px; border-bottom: 1px solid #f1f5f9; cursor: pointer; transition: 0.15s; }
-    .search-item:hover { background: #f8fafc; }
+    .search-item { padding: 10px 14px; border-bottom: 1px solid var(--border-color); cursor: pointer; transition: 0.15s; }
+    .search-item:hover { background: var(--bg-input); }
     .search-item b { display: block; font-size: 13px; color: var(--primary); }
     .search-item span { font-size: 11px; color: var(--text-muted); }
 
-    /* Responsive adjustments for Mobile/Tablet */
+    /* Responsive Layout */
     @media (max-width: 768px) {
       .topbar { flex-wrap: wrap; }
       .brand { font-size: 15px; }
-      .search-box { order: 3; max-width: 100%; width: 100%; margin-top: 4px; }
-      .filter-bar { top: auto; bottom: 50px; left: 12px; right: 12px; overflow-x: auto; white-space: nowrap; flex-wrap: nowrap; }
+      .search-box { order: 4; max-width: 100%; width: 100%; margin-top: 4px; }
+      .filter-bar { top: auto; bottom: 85px; left: 12px; right: 12px; overflow-x: auto; white-space: nowrap; flex-wrap: nowrap; }
+      .legend-bar { display: none; } /* Sembunyikan legenda di HP agar tidak memenuhi layar */
       .search-results { top: 110px; left: 12px; right: 12px; width: auto; }
       
-      /* Turn Detail Card into Bottom Sheet on Mobile */
       .detail-card {
         top: auto; bottom: 0; left: 0; right: 0; width: 100%; max-height: 70vh;
         border-radius: 20px 20px 0 0; padding: 20px 20px 30px; border: 0;
@@ -137,10 +169,11 @@
 <div class="topbar">
   <div class="brand">🚢 AIS INDONESIA</div>
   <div class="search-box">
-    <input id="search" type="text" placeholder="Cari MMSI / Nama Kapal...">
+    <input id="search" type="text" placeholder="Cari Nama, MMSI, atau IMO Kapal...">
   </div>
   <button class="btn btn-primary" onclick="searchVessel()">Cari</button>
-  <button class="btn btn-secondary" onclick="reloadAIS()">↻</button>
+  <button class="btn btn-secondary" onclick="reloadAIS()" title="Refresh Data">↻</button>
+  <button id="themeToggle" class="btn btn-secondary" onclick="toggleTheme()" title="Ubah Tema">🌙</button>
   <button id="btnInstall" class="btn btn-install" onclick="installPWA()">📲 Install</button>
 </div>
 
@@ -150,11 +183,11 @@
     <label>Jenis:</label>
     <select id="type">
       <option value="">Semua Jenis</option>
-      <option value="70-79">Cargo</option>
-      <option value="80-89">Tanker</option>
-      <option value="60-69">Passenger</option>
-      <option value="30">Fishing</option>
-      <option value="31-35">Towing / Special</option>
+      <option value="80-89">Tanker 🔴</option>
+      <option value="60-69">Passenger 🔵</option>
+      <option value="70-79">Cargo 🟢</option>
+      <option value="30">Fishing 🟡</option>
+      <option value="31-35">Tug / Special 🟠</option>
     </select>
   </div>
   <div class="filter-group">
@@ -174,6 +207,16 @@
   </div>
 </div>
 
+<!-- Legenda Warna Kapal -->
+<div class="legend-bar">
+  <div class="legend-item"><span class="legend-color" style="background: #ef4444;"></span> Tanker</div>
+  <div class="legend-item"><span class="legend-color" style="background: #3b82f6;"></span> Passenger</div>
+  <div class="legend-item"><span class="legend-color" style="background: #10b981;"></span> Cargo</div>
+  <div class="legend-item"><span class="legend-color" style="background: #eab308;"></span> Fishing</div>
+  <div class="legend-item"><span class="legend-color" style="background: #f97316;"></span> Tug/Special</div>
+  <div class="legend-item"><span class="legend-color" style="background: #94a3b8;"></span> Lainnya</div>
+</div>
+
 <div id="results" class="search-results"></div>
 <div id="detail" class="detail-card"></div>
 <div id="status" class="status-pill"><span class="status-dot"></span><span id="status-text">Inisialisasi Peta...</span></div>
@@ -185,20 +228,31 @@ const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbzQ1_wKxbyxM-GfpACo
 let timer = null;
 let deferredPrompt = null;
 
-function setStatus(msg) {
-  document.getElementById('status-text').textContent = msg;
-}
+// WARNA-WARNA KAPAL
+const SHIP_COLORS = {
+  tanker: '#ef4444',    // Merah
+  passenger: '#3b82f6', // Biru
+  cargo: '#10b981',     // Hijau
+  fishing: '#eab308',   // Kuning
+  special: '#f97316',   // Orange
+  other: '#94a3b8'      // Abu-abu
+};
 
-function esc(str) {
-  return String(str ?? '-').replace(/[&<>"']/g, c => ({
-    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-  }[c]));
-}
-
-// Inisialisasi MapLibre GL
-const map = new maplibregl.Map({
-  container: 'map',
-  style: {
+// PETA BASEMAP STYLES
+const MAP_STYLES = {
+  dark: {
+    version: 8,
+    sources: {
+      carto: {
+        type: 'raster',
+        tiles: ['https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'],
+        tileSize: 256,
+        attribution: '© CARTO, OpenStreetMap'
+      }
+    },
+    layers: [{ id: 'carto', type: 'raster', source: 'carto' }]
+  },
+  light: {
     version: 8,
     sources: {
       osm: {
@@ -209,15 +263,48 @@ const map = new maplibregl.Map({
       }
     },
     layers: [{ id: 'osm', type: 'raster', source: 'osm' }]
-  },
+  }
+};
+
+let currentTheme = localStorage.getItem('theme') || 'dark';
+document.documentElement.setAttribute('data-theme', currentTheme);
+
+function applyThemeUI() {
+  const isDark = currentTheme === 'dark';
+  document.getElementById('themeToggle').textContent = isDark ? '🌙' : '☀️';
+  document.getElementById('theme-color-meta').setAttribute('content', isDark ? '#0b131e' : '#ffffff');
+}
+
+function toggleTheme() {
+  currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+  localStorage.setItem('theme', currentTheme);
+  document.documentElement.setAttribute('data-theme', currentTheme);
+  applyThemeUI();
+  map.setStyle(MAP_STYLES[currentTheme]);
+}
+
+function setStatus(msg) {
+  document.getElementById('status-text').textContent = msg;
+}
+
+function esc(str) {
+  return String(str ?? '-').replace(/[&<>"']/g, c => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[c]));
+}
+
+const map = new maplibregl.Map({
+  container: 'map',
+  style: MAP_STYLES[currentTheme],
   center: [118, -2.5],
   zoom: 4.8
 });
 
+applyThemeUI();
 map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right');
 
-map.on('load', () => {
-  addShipImage();
+map.on('style.load', () => {
+  addShipIcons();
   reloadAIS();
 });
 
@@ -229,17 +316,23 @@ function currentFilters() {
   };
 }
 
-function addShipImage() {
-  if (map.hasImage('ship-icon')) return;
-  const svg = 
-    '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">'+
-    '<path d="M32 3 L50 51 L41 58 L32 55 L23 58 L14 51 Z" fill="#0284c7" stroke="white" stroke-width="3"/>'+
-    '<path d="M32 10 L32 51" stroke="white" stroke-width="3"/>'+
-    '</svg>';
+// MEMBUAT IKON BERBEDfloating WARNA UNTUK TIAP JENIS KAPAL
+function addShipIcons() {
+  Object.keys(SHIP_COLORS).forEach(key => {
+    const iconName = 'ship-icon-' + key;
+    if (map.hasImage(iconName)) return;
 
-  const img = new Image(64, 64);
-  img.onload = () => map.addImage('ship-icon', img, { sdf: false });
-  img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+    const color = SHIP_COLORS[key];
+    const svg = 
+      `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">`+
+      `<path d="M32 3 L50 51 L41 58 L32 55 L23 58 L14 51 Z" fill="${color}" stroke="white" stroke-width="3"/>`+
+      `<path d="M32 10 L32 51" stroke="white" stroke-width="3"/>`+
+      `</svg>`;
+
+    const img = new Image(64, 64);
+    img.onload = () => map.addImage(iconName, img, { sdf: false });
+    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+  });
 }
 
 function removeAISLayer() {
@@ -260,13 +353,28 @@ function loadTiles(info) {
     maxzoom: info.maxzoom ?? 14
   });
 
+  // LOGIKA PEMILIHAN IKON BERDASARKAN SHIP TYPE AIS
   map.addLayer({
     id: 'ais-vessels',
     type: 'symbol',
     source: 'ais',
     'source-layer': 'vessels',
     layout: {
-      'icon-image': 'ship-icon',
+      'icon-image': [
+        'case',
+        // Tanker (Type 80 - 89)
+        ['all', ['>=', ['to-number', ['get', 'type']], 80], ['<=', ['to-number', ['get', 'type']], 89]], 'ship-icon-tanker',
+        // Passenger (Type 60 - 69)
+        ['all', ['>=', ['to-number', ['get', 'type']], 60], ['<=', ['to-number', ['get', 'type']], 69]], 'ship-icon-passenger',
+        // Cargo (Type 70 - 79)
+        ['all', ['>=', ['to-number', ['get', 'type']], 70], ['<=', ['to-number', ['get', 'type']], 79]], 'ship-icon-cargo',
+        // Fishing (Type 30)
+        ['==', ['to-number', ['get', 'type']], 30], 'ship-icon-fishing',
+        // Special / Tug (Type 31-35, 50-59)
+        ['all', ['>=', ['to-number', ['get', 'type']], 31], ['<=', ['to-number', ['get', 'type']], 59]], 'ship-icon-special',
+        // Default / Other
+        'ship-icon-other'
+      ],
       'icon-size': ['interpolate', ['linear'], ['zoom'], 3, 0.18, 6, 0.28, 9, 0.42, 14, 0.55],
       'icon-rotate': ['coalesce', ['get', 'hdg'], ['get', 'heading'], ['get', 'cog'], 0],
       'icon-rotation-alignment': 'map',
@@ -274,6 +382,9 @@ function loadTiles(info) {
       'icon-allow-overlap': true
     }
   });
+
+  const textColor = currentTheme === 'dark' ? '#f8fafc' : '#0f172a';
+  const haloColor = currentTheme === 'dark' ? '#0f172a' : '#ffffff';
 
   map.addLayer({
     id: 'ais-labels',
@@ -287,7 +398,7 @@ function loadTiles(info) {
       'text-offset': [0, 2.2],
       'text-anchor': 'top'
     },
-    paint: { 'text-color': '#0f172a', 'text-halo-color': '#ffffff', 'text-halo-width': 1.5 }
+    paint: { 'text-color': textColor, 'text-halo-color': haloColor, 'text-halo-width': 1.5 }
   });
 
   map.off('click', 'ais-vessels', onShipClick);
@@ -358,6 +469,7 @@ function showDetail(data) {
       </div>
       <button class="close-btn" onclick="closeDetail()">×</button>
     </div>
+    ${row('IMO', p.imo)}
     ${row('Jenis', p.type)}
     ${row('Bendera', p.flag)}
     ${row('Kecepatan (SOG)', p.sog != null ? p.sog + ' kn' : '-')}
@@ -375,6 +487,7 @@ function row(a, b) {
 
 function closeDetail() { document.getElementById('detail').style.display = 'none'; }
 
+// PENCARIAN (Bisa berdasarkan Nama, MMSI, maupun IMO)
 async function searchVessel() {
   const q = document.getElementById('search').value.trim();
   if (q.length < 2) return;
@@ -400,7 +513,8 @@ function showSearchResults(fc) {
       const p = f.properties || {};
       const el = document.createElement('div');
       el.className = 'search-item';
-      el.innerHTML = `<b>${esc(p.name || 'UNKNOWN')}</b><span>MMSI ${esc(p.mmsi || f.id)}</span>`;
+      const imoText = p.imo ? ` • IMO ${p.imo}` : '';
+      el.innerHTML = `<b>${esc(p.name || 'UNKNOWN')}</b><span>MMSI ${esc(p.mmsi || f.id)}${esc(imoText)}</span>`;
       el.onclick = () => {
         box.style.display = 'none';
         if (f.geometry && f.geometry.coordinates) {
@@ -414,7 +528,6 @@ function showSearchResults(fc) {
   box.style.display = 'block';
 }
 
-// Service Worker & PWA Install Listener
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js');
 }
@@ -435,7 +548,6 @@ function installPWA() {
   }
 }
 
-// Event Listeners
 document.getElementById('search').addEventListener('keydown', e => { if (e.key === 'Enter') searchVessel(); });
 ['type', 'class', 'minSog'].forEach(id => document.getElementById(id).addEventListener('change', reloadAIS));
 
