@@ -149,7 +149,7 @@
       .brand { font-size: 15px; }
       .search-box { order: 4; max-width: 100%; width: 100%; margin-top: 4px; }
       .filter-bar { top: auto; bottom: 85px; left: 12px; right: 12px; overflow-x: auto; white-space: nowrap; flex-wrap: nowrap; }
-      .legend-bar { display: none; } /* Sembunyikan legenda di HP agar tidak memenuhi layar */
+      .legend-bar { display: none; }
       .search-results { top: 110px; left: 12px; right: 12px; width: auto; }
       
       .detail-card {
@@ -238,10 +238,11 @@ const SHIP_COLORS = {
   other: '#94a3b8'      // Abu-abu
 };
 
-// PETA BASEMAP STYLES
+// PETA BASEMAP STYLES DENGAN GLYPHS FONT
 const MAP_STYLES = {
   dark: {
     version: 8,
+    glyphs: 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
     sources: {
       carto: {
         type: 'raster',
@@ -254,6 +255,7 @@ const MAP_STYLES = {
   },
   light: {
     version: 8,
+    glyphs: 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
     sources: {
       osm: {
         type: 'raster',
@@ -316,7 +318,7 @@ function currentFilters() {
   };
 }
 
-// MEMBUAT IKON BERBEDfloating WARNA UNTUK TIAP JENIS KAPAL
+// MEMBUAT IKON BERBED-Warna UNTUK TIAP JENIS KAPAL
 function addShipIcons() {
   Object.keys(SHIP_COLORS).forEach(key => {
     const iconName = 'ship-icon-' + key;
