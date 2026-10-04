@@ -239,25 +239,28 @@ const SHIP_COLORS = {
 };
 
 // PETA BASEMAP STYLES (100% GRATIS TANPA API KEY DENGAN EFEK MODE GELAP)
+// PETA BASEMAP STYLES (100% GRATIS TANPA API KEY CARTO)
 const MAP_STYLES = {
   dark: {
     version: 8,
     glyphs: 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
     sources: {
-      carto: {
+      osm: {
         type: 'raster',
-        tiles: ['https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'],
+        tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
         tileSize: 256,
-        attribution: '© CARTO, OpenStreetMap'
+        attribution: '© OpenStreetMap'
       }
     },
     layers: [{
-      id: 'carto',
+      id: 'osm',
       type: 'raster',
-      source: 'carto',
+      source: 'osm',
       paint: {
-        'raster-brightness-max': 0.25,
-        'raster-contrast': 0.15,
+        // Filter CSS bawaan MapLibre untuk mengubah OpenStreetMap terang menjadi mode gelap murni
+        'raster-brightness-max': 0.6,
+        'raster-contrast': 0.2,
+        'raster-saturation': -0.7,
         'raster-hue-rotate': 180
       }
     }]
