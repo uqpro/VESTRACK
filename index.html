@@ -238,7 +238,7 @@ const SHIP_COLORS = {
   other: '#94a3b8'      // Abu-abu
 };
 
-// PETA BASEMAP STYLES DENGAN GLYPHS FONT
+// PETA BASEMAP STYLES (100% GRATIS TANPA API KEY DENGAN EFEK MODE GELAP)
 const MAP_STYLES = {
   dark: {
     version: 8,
@@ -246,12 +246,21 @@ const MAP_STYLES = {
     sources: {
       carto: {
         type: 'raster',
-        tiles: ['https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'],
+        tiles: ['https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'],
         tileSize: 256,
         attribution: '© CARTO, OpenStreetMap'
       }
     },
-    layers: [{ id: 'carto', type: 'raster', source: 'carto' }]
+    layers: [{
+      id: 'carto',
+      type: 'raster',
+      source: 'carto',
+      paint: {
+        'raster-brightness-max': 0.25,
+        'raster-contrast': 0.15,
+        'raster-hue-rotate': 180
+      }
+    }]
   },
   light: {
     version: 8,
@@ -318,7 +327,7 @@ function currentFilters() {
   };
 }
 
-// MEMBUAT IKON BERBED-Warna UNTUK TIAP JENIS KAPAL
+// MEMBUAT IKON BERBEDA WARNA UNTUK TIAP JENIS KAPAL
 function addShipIcons() {
   Object.keys(SHIP_COLORS).forEach(key => {
     const iconName = 'ship-icon-' + key;
